@@ -79,8 +79,8 @@ void Chip8::emulateCycle() {
 
     case 0x2000:
       {
+        ++sp; // increment before or after?
         stack[sp] = pc;
-        ++sp;
         pc = opcode & 0x0FFF;
         break;
       }

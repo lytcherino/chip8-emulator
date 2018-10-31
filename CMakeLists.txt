@@ -1,12 +1,20 @@
 cmake_minimum_required(VERSION 2.8)
-project (Chip8)
+project(Chip8)
 
-
-include_directories(.)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
 
 # Get all the source files
 file(GLOB SOURCES "*.cpp")
 
-add_executable(chip8 ${SOURCES})
+# Link with SDL2
 
+# Not needed??
+FIND_PACKAGE(SDL2 REQUIRED)
+FIND_FILE(SDL2_INCLUDE_DIR NAME SDL.h HINTS SDL2)
+FIND_LIBRARY(SDL2_LIBRARY NAME SDL2)
+
+ADD_EXECUTABLE(${PROJECT_NAME} ${SOURCES})
+
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS})
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} ${SDL2_LIBRARIES})
 
