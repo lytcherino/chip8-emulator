@@ -1,6 +1,8 @@
 #include <iostream>
 #include <vector>
 
+#include "Chip8.h"
+
 int main()
 {
   Chip8 chip;
@@ -19,11 +21,11 @@ int main()
 
     // Update screen is draw flag is set
     if (chip.graphicsUpdated()) {
-      draw();
+      //draw();
     }
 
     // Store key press states (Press & Release)
-    chip.setKeys();
+    //chip.setKeys();
   }
 
 }
