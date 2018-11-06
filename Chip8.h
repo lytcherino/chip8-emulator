@@ -4,6 +4,9 @@
 #include <iostream>
 #include <fstream>
 
+#include "DisplayModule.h"
+//#include "EventHandler.h"
+
 class Chip8
 {
 public:
@@ -12,10 +15,14 @@ public:
 
   void init();
   void emulateCycle();
-  bool graphicsUpdated();
+  void handleEvents();
+  void updateDisplay();
   bool load(const std::string& file);
 
 private:
+
+  EventHandler m_sdlEventHandler;
+  DisplayModule displayModule;
 
   unsigned short opcode;
 
@@ -23,7 +30,8 @@ private:
   // 0x200 - 0xFFF - Program ROM and working RAM
   // 0x050 - 0x0A0 - Pixel fonts
   // 0x000 - 0x1FF - Chip Interpreter
-  unsigned char memory[4096]; // 4K memory
+  //unsigned char memory[4096]; // 4K memory
+  std::vector<unsigned char> memory; // 4K memory
 
   unsigned char V[16]; // 15, 8-bit registers, V1 ... VF
 
@@ -33,9 +41,6 @@ private:
   unsigned short stack[16]; // Stack with 16 levels
   unsigned short sp; // Stack pointer, points to current level used in stack
 
-  unsigned char gfx[64 * 32]; // Graphics supported was 64 x 32 pixels, monochrome
-
-  bool drawFlag = { false };
 
   // 60Hz timers
   unsigned char delayTimer;

@@ -1,8 +1,11 @@
 
 #include "Chip8.h"
+#include <iomanip>
+#include <random>
 
-Chip8::Chip8() {
-
+Chip8::Chip8() : displayModule(m_sdlEventHandler), memory(4096, 0) {
+  init();
+  srand(0);
 }
 
 void Chip8::init() {
@@ -14,12 +17,20 @@ void Chip8::init() {
   sp = 0;
 
   // Clear Display
+  //displayModule.clearScreen();
 
-  // Clear stack
+  // TODO: use std::copy(...) instead
 
-  // Clear registers V0-VF
+  // Clear registers V0-VF and stack
+  for (int i = 0; i < 0xF; ++i) {
+    V[i] = 0x0;
+    stack[i] = 0x0;
+  }
 
   // Clear memory
+  for (int i = 0; i < 4096; ++i) {
+    memory[i] = 0x0;
+  }
 
   // Load fontset
   for (int i = 0; i < 80; ++i) {
@@ -28,29 +39,69 @@ void Chip8::init() {
 
 }
 
+void Chip8::handleEvents() {
+  m_sdlEventHandler.handleEvents();
+}
+
+void Chip8::updateDisplay() {
+  displayModule.updateScreen();
+}
+
 bool Chip8::load(const std::string& file) {
 
-  std::fstream reader(file, std::ios_base::binary);
+  init();
 
-  auto bufferSize = 0xFFF - 0x200;
-  char data[bufferSize];
-  reader.read(data, bufferSize);
-  for (int i = 0; i < 0xFFF-0x200; ++i) {
-    // Start filling from 0x200 (512)
-    memory[i + 0x200] = data[i];
-    // Assign byte by byte instead using
-    // >> reader ?
+  std::ifstream reader(file, std::ios::binary);
+
+  if (reader.good()) {
+
+    int i = 0;
+    char c;
+    std::cout << "\n0x" << std::setw(4) << std::setfill('0')
+              << static_cast<int>(0) << " ";
+
+    // (while (reader >> c)) skips 0x20, space character!
+    while (!reader.eof()) {
+
+      reader.read(&c, sizeof(char));
+
+      std::cout << std::hex << std::setfill('0')
+                << std::setw(2) << static_cast<int>(c & 0xFF) << " ";
+
+      memory[i+pc] = c & 0xFF;
+      i++;
+
+      if (i % 0x10 == 0) {
+        std::cout << "\n0x" << std::setw(4) << std::setfill('0')
+                  << static_cast<int>(i) << " ";
+      }
+
+    }
+
+    std::cout << "i: " << i << "\n";
+  } else {
+
+    std::cout << "Failed to open " << file << "\n";
+    return false;
   }
 
-  // return false if file is invalid
   return true;
 }
 
 void Chip8::emulateCycle() {
-  // Fetch Opcode
 
   // An opcode is 2 bytes long; need to fetch 2 successive bytes of the program counter
   opcode = memory[pc] << 8 | memory[pc + 1]; // Join into 2 bytes
+  std::cout << std::setw(2) << std::setfill('0') << std::hex
+            << "memory[" << pc << "] << 8 = "
+            << static_cast<int>(memory[pc] << 8) << "\n"
+            << "memory[" << pc << " + 1] << 8 = "
+            << static_cast<int>(memory[pc + 1]) << "\n";
+
+  std::cout << "opcode: " << std::setw(4) << std::setfill('0') << std::hex << opcode << "\n";
+  std::cout << "pc: " << std::dec << pc << "\n";
+
+  auto beforeOpPc = pc;
 
   switch(opcode & 0xF000)
     {
@@ -59,14 +110,24 @@ void Chip8::emulateCycle() {
       switch (opcode & 0x00FF)
         {
         case 0x00E0: {
-          // 0x00E0: Clears screen
+          // Clears screen
+          displayModule.clearScreen();
+          displayModule.setDrawFlag();
           break;
         }
 
         case 0x00EE: {
           // 0x00EE: Returns from subroutine
+          std::cout << "Stack at level " << sp << " = " << pc << "\n";
+          std::cout << "stack[sp] = " << stack[sp] << "\n";
           pc = stack[sp];
+          std::cout << "pc = " << pc << "\n";
           --sp;
+          return;
+        }
+        default: {
+          std::cout << "Invalid opcode: " << std::setw(4)
+                    << std::setfill('0') << opcode << "\n";
           break;
         }
       }
@@ -79,8 +140,9 @@ void Chip8::emulateCycle() {
 
     case 0x2000:
       {
-        ++sp; // increment before or after?
+        ++sp;
         stack[sp] = pc;
+        std::cout << "Stack at level " << sp << " = " << pc << "\n";
         pc = opcode & 0x0FFF;
         break;
       }
@@ -88,8 +150,9 @@ void Chip8::emulateCycle() {
     case 0x3000:
       {
         if (V[opcode & 0x0F00 >> 8] != opcode & 0x00FF) {
-          pc += 4; // by 4?
+          pc += 2;
         }
+        pc += 2;
         break;
       }
 
@@ -176,6 +239,11 @@ void Chip8::emulateCycle() {
           pc += 2;
           break;
         }
+        default: {
+          std::cout << "Invalid opcode: " << std::setw(4)
+                    << std::setfill('0') << std::hex << opcode << "\n";
+          break;
+        }
         }
       }
 
@@ -184,15 +252,24 @@ void Chip8::emulateCycle() {
         if (V[opcode & 0x0F00] != V[opcode & 0x00F0]) {
           pc += 2;
         }
+        pc += 2;
+        break;
       }
 
-    case 0x0004:
+    case 0xA000:
       {
-        V[0xF] = 0;
-        if (V[(opcode & 0x00F0) >> 4] + V[(opcode & 0x0F00) >> 8] > 0xFF) {
-          V[0xF] = 1;
-        }
-        V[(opcode & 0x0F00) >> 8] += V[(opcode & 0x00F0) >> 4];
+        I = opcode & 0x0FFF;
+        pc += 2;
+        break;
+      }
+    case 0xB000:
+      {
+        pc = (opcode & 0x0FFF) + V[0x0];
+        break;
+      }
+    case 0xC000:
+      {
+        V[opcode & 0x0F00 >> 8] = rand() % 0xFF + V[0x0];
         pc += 2;
         break;
       }
@@ -215,14 +292,14 @@ void Chip8::emulateCycle() {
             if ((pixel && (0x80 >> xScan)) != 0) {
               // If the pixel is 1 and the pixel on the display is 1
               // then a collision is detected
-              if (gfx[(x + xScan + ((y + yScan) * 64))] == 1) {
+              if (displayModule.getGfxArray()[(x + xScan + ((y + yScan) * 64))] == 1) {
                 V[0xF] = 1; // mark collision
               }
-              gfx[x + xScan + ((y + yScan) * 64)] ^= 1;
+              displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] ^= 1;
             }
           }
         }
-        drawFlag = true;
+        displayModule.setDrawFlag();
         pc += 2;
         break;
       }
@@ -248,56 +325,74 @@ void Chip8::emulateCycle() {
           }
           break;
         }
+        default: {
+          std::cout << "Invalid opcode: " << std::setw(4)
+                    << std::setfill('0') << std::hex << opcode << "\n";
+          break;
+        }
         }
       }
 
     case 0xF000:
       {
-        switch (opcode & 0xFF) {
+        switch (opcode & 0x00FF) {
 
-        case 0x0018: {
-          soundTimer = V[opcode & 0x0F00 >> 8];
-          break;
-        }
-
-        case 0x001E: {
-          I += V[opcode & 0x0F00 >> 8];
-          break;
-        }
-
-        case 0x0029: {
-          I = V[opcode & 0x0F00 >> 8] * 0x05;
-          break;
-        }
-
-        case 0x0033: {
-          memory[I] = V[(opcode & 0x0F00) >> 8] / 100; // hundreds digit
-          memory[I + 1] = (V[(opcode & 0x0F00) >> 8] % 100) / 10; // tenth digit
-          memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10; // ones digit
-          pc += 2;
-          break;
-        }
-
-        case 0x0055: {
-          for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
-            memory[I+i] = V[i];
+          case 0x0018: {
+            soundTimer = V[opcode & 0x0F00 >> 8];
+            pc += 2;
+            break;
           }
-        }
 
-        case 0x0065: {
-          for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
-            V[i] = memory[I+i];
+          case 0x001E: {
+            I += V[opcode & 0x0F00 >> 8];
+            pc += 2;
+            break;
+          }
+
+          case 0x0029: {
+            I = V[opcode & 0x0F00 >> 8] * 0x05;
+            pc += 2;
+            break;
+          }
+
+          case 0x0033: {
+            memory[I] = V[(opcode & 0x0F00) >> 8] / 100; // hundreds digit
+            memory[I + 1] = (V[(opcode & 0x0F00) >> 8] % 100) / 10; // tenth digit
+            memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10; // ones digit
+            pc += 2;
+            break;
+          }
+
+          case 0x0055: {
+            for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
+              memory[I+i] = V[i];
+            }
+            pc += 2;
+            break;
+          }
+
+          case 0x0065: {
+            for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
+              V[i] = memory[I+i];
+            }
+            pc += 2;
+            break;
+          }
+          default: {
+            std::cout << "Invalid opcode: " << std::setw(4)
+                      << std::setfill('0') << std::hex << opcode << "\n";
+            break;
           }
         }
       }
     }
 
-    // Decode Opcode
-
-    // Execute Opcode
+    if (beforeOpPc == pc) {
+      std::cout << "Invalid opcode: " << std::setw(4)
+                << std::setfill('0') << std::hex << opcode << "\n";
+    }
 
     // Update timers
-
     if (delayTimer > 0) {
       --delayTimer;
     }
@@ -309,10 +404,4 @@ void Chip8::emulateCycle() {
       --soundTimer;
     }
 
-  }
-}
-
-
-bool Chip8::graphicsUpdated() {
-  return drawFlag;
 }
