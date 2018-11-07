@@ -149,7 +149,7 @@ void Chip8::emulateCycle() {
 
     case 0x3000:
       {
-        if (V[opcode & 0x0F00 >> 8] != opcode & 0x00FF) {
+        if (V[opcode & 0x0F00 >> 8] != (opcode & 0x00FF)) {
           pc += 2;
         }
         pc += 2;
@@ -214,7 +214,7 @@ void Chip8::emulateCycle() {
 
         case 0x0006: {
           V[0xF] = 0;
-          if (V[opcode & 0x0F00 >> 8] & 0x01 == 1) {
+          if ((V[opcode & 0x0F00 >> 8] & 0x01) == 1) {
             V[0xF] = 1;
           }
           pc += 2;
@@ -233,7 +233,7 @@ void Chip8::emulateCycle() {
 
         case 0x0008: {
           V[0xF] = 0;
-          if (V[opcode & 0x0F00 >> 8] & 0x80 == 1) {
+          if ((V[opcode & 0x0F00 >> 8] & 0x80) == 1) {
             V[0xF] = 1;
           }
           pc += 2;

@@ -11,7 +11,9 @@ int main()
 
   // Initialise Chip8 emulator and load a game
   chip.init();
-  chip.load("../Tank.ch8");
+  if (!chip.load("../Tank.ch8")) {
+    return 1;
+  }
 
   for (int i = 0; i < 200; ++i) {
     chip.emulateCycle();
