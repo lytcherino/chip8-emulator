@@ -19,10 +19,8 @@ int main()
     chip.emulateCycle();
     chip.handleEvents();
     chip.updateDisplay();
-    // Store key press states (Press & Release)
-    //chip.setKeys();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds{10});
+    std::this_thread::sleep_for(std::chrono::milliseconds{100});
   }
 
 }

@@ -3,7 +3,12 @@
 #include <iomanip>
 #include <random>
 
-Chip8::Chip8() : displayModule(m_sdlEventHandler), memory(4096, 0) {
+#define DEBUG true
+
+Chip8::Chip8()
+  : displayModule(m_sdlEventHandler),
+    inputModule(m_sdlEventHandler),
+    memory(4096, 0) {
   init();
   srand(0);
 }
@@ -33,6 +38,7 @@ void Chip8::init() {
   }
 
   // Load fontset
+  auto fontset = displayModule.getFontset();
   for (int i = 0; i < 80; ++i) {
     memory[i] = fontset[i];
   }
@@ -92,6 +98,8 @@ void Chip8::emulateCycle() {
 
   // An opcode is 2 bytes long; need to fetch 2 successive bytes of the program counter
   opcode = memory[pc] << 8 | memory[pc + 1]; // Join into 2 bytes
+
+  if (DEBUG) {
   std::cout << std::setw(2) << std::setfill('0') << std::hex
             << "memory[" << pc << "] << 8 = "
             << static_cast<int>(memory[pc] << 8) << "\n"
@@ -100,8 +108,12 @@ void Chip8::emulateCycle() {
 
   std::cout << "opcode: " << std::setw(4) << std::setfill('0') << std::hex << opcode << "\n";
   std::cout << "pc: " << std::dec << pc << "\n";
+      }
 
+  auto value = inputModule.waitUntilKeyPress();
+  std::cout << "value: " << value << "\n";
   auto beforeOpPc = pc;
+  auto calledSubroutine = false;
 
   switch(opcode & 0xF000)
     {
@@ -118,18 +130,32 @@ void Chip8::emulateCycle() {
 
         case 0x00EE: {
           // 0x00EE: Returns from subroutine
-          std::cout << "Stack at level " << sp << " = " << pc << "\n";
-          std::cout << "stack[sp] = " << stack[sp] << "\n";
+
+          if (DEBUG) {
+            std::cout << "Stack at level " << sp << " = " << pc << "\n";
+            std::cout << "stack[sp] = " << stack[sp] << "\n";
+          }
+
           pc = stack[sp];
-          std::cout << "pc = " << pc << "\n";
+
+          if (DEBUG) {
+            std::cout << "pc = " << pc << "\n"; 
+          }
+
           --sp;
-          return;
+          calledSubroutine = true;
+          break;
         }
         default: {
           std::cout << "Invalid opcode: " << std::setw(4)
                     << std::setfill('0') << opcode << "\n";
           break;
         }
+      }
+
+      if (calledSubroutine) {
+        calledSubroutine = !calledSubroutine;
+        break;
       }
 
     case 0x1000:
@@ -150,6 +176,24 @@ void Chip8::emulateCycle() {
     case 0x3000:
       {
         if (V[opcode & 0x0F00 >> 8] != (opcode & 0x00FF)) {
+          pc += 2;
+        }
+        pc += 2;
+        break;
+      }
+
+    case 0x4000:
+      {
+        if (V[opcode & 0x0F00 >> 8] == (opcode & 0x00FF)) {
+          pc += 2;
+        }
+        pc += 2;
+        break;
+      }
+
+    case 0x5000:
+      {
+        if (V[opcode & 0x0F00 >> 8] == V[opcode & 0x00F0 >> 4]) {
           pc += 2;
         }
         pc += 2;
@@ -262,11 +306,13 @@ void Chip8::emulateCycle() {
         pc += 2;
         break;
       }
+
     case 0xB000:
       {
         pc = (opcode & 0x0FFF) + V[0x0];
         break;
       }
+
     case 0xC000:
       {
         V[opcode & 0x0F00 >> 8] = rand() % 0xFF + V[0x0];
@@ -289,10 +335,10 @@ void Chip8::emulateCycle() {
           for (int xScan = 0; xScan < 8; ++xScan) {
             // Check which pixels are 0, within a byte
             // by checking each one individually by shifting
-            if ((pixel && (0x80 >> xScan)) != 0) {
+            if ((pixel && (0x80 >> xScan)) == 1) {
               // If the pixel is 1 and the pixel on the display is 1
               // then a collision is detected
-              if (displayModule.getGfxArray()[(x + xScan + ((y + yScan) * 64))] == 1) {
+              if (displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] == 1) {
                 V[0xF] = 1; // mark collision
               }
               displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] ^= 1;
@@ -309,7 +355,7 @@ void Chip8::emulateCycle() {
         switch (opcode & 0x00FF) {
 
         case 0x009E: {
-          if (key[V[(opcode & 0x0F00) >> 8]] != 0) {
+          if (inputModule.isKeyPressed(V[(opcode & 0x0F00) >> 8])) {
             pc += 4;
           } else {
             pc += 2;
@@ -318,7 +364,7 @@ void Chip8::emulateCycle() {
         }
 
         case 0x00A1: {
-          if (key[V[opcode & 0x0F00 >> 8]] == 0) {
+          if (!inputModule.isKeyPressed(V[(opcode & 0x0F00) >> 8])) {
             pc += 4;
           } else {
             pc += 2;
@@ -336,6 +382,22 @@ void Chip8::emulateCycle() {
     case 0xF000:
       {
         switch (opcode & 0x00FF) {
+
+          case 0x0007: {
+            V[(opcode & 0x0F00) >> 8] = delayTimer;
+            pc += 2;
+          }
+
+          case 0x000A: {
+            auto value = inputModule.waitUntilKeyPress();
+            V[(opcode & 0x0F00)] = value;
+            pc += 2;
+          }
+
+          case 0x0015: {
+            delayTimer = (opcode & 0x0F00) >> 8;
+            pc += 2;
+          }
 
           case 0x0018: {
             soundTimer = V[opcode & 0x0F00 >> 8];
@@ -378,6 +440,7 @@ void Chip8::emulateCycle() {
             pc += 2;
             break;
           }
+
           default: {
             std::cout << "Invalid opcode: " << std::setw(4)
                       << std::setfill('0') << std::hex << opcode << "\n";
@@ -405,3 +468,4 @@ void Chip8::emulateCycle() {
     }
 
 }
+

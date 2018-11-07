@@ -7,9 +7,23 @@
 #include <map>
 #include <memory>
 
-#include "EventHandler.h"
+#include "BaseModule.h"
 
-class DisplayModule {
+class DisplayModule : public BaseModule {
+
+  struct Color {
+    int8_t red;
+    int8_t green;
+    int8_t blue;
+    int8_t alpha;
+
+    Color (int8_t red, int8_t green, int8_t blue, int8_t alpha = 255) {
+      this->red = red;
+      this->green = green;
+      this->blue = blue;
+      this->alpha = alpha;
+    }
+  };
 
 public:
 
@@ -20,14 +34,16 @@ public:
   void updateScreen();
   void setDrawFlag();
 
-  void registerWithHandler(EventHandler& eventHandler);
+  void registerWithHandler(EventHandler& eventHandler) override;
 
   unsigned char* getGfxArray();
+  unsigned char* getFontset();
 
 private:
 
   void init();
   void drawScreen();
+  void setDrawColor(const Color& color);
 
   SDL_Window* m_window;
   SDL_Renderer* m_renderer;
@@ -36,6 +52,25 @@ private:
 
   static constexpr int GFX_SIZE = 64 * 32;
   unsigned char gfx[GFX_SIZE]; // Graphics supported was 64 x 32 pixels, monochrome
+
+  unsigned char fontset[80] = {
+    0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
+    0x20, 0x60, 0x20, 0x20, 0x70, // 1
+    0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
+    0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
+    0x90, 0x90, 0xF0, 0x10, 0x10, // 4
+    0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
+    0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
+    0xF0, 0x10, 0x20, 0x40, 0x40, // 7
+    0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
+    0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
+    0xF0, 0x90, 0xF0, 0x90, 0x90, // A
+    0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
+    0xF0, 0x80, 0x80, 0x80, 0xF0, // C
+    0xE0, 0x90, 0x90, 0x90, 0xE0, // D
+    0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
+    0xF0, 0x80, 0xF0, 0x80, 0x80  // F
+  };
 
 };
 
