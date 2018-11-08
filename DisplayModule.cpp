@@ -17,11 +17,7 @@ void DisplayModule::registerWithHandler(EventHandler& eventHandler) {
 }
 
 DisplayModule::~DisplayModule() {
-  // TODO: encapsulate pointers with smart pointer
-  // with custom deleter instead
 
-  //delete m_window;
-  //delete m_renderer;
 }
 
 void DisplayModule::init() {
@@ -30,14 +26,28 @@ void DisplayModule::init() {
     std::cout << "SDL_Init Error: " << SDL_GetError() << "\n";
   }
 
-  m_window = SDL_CreateWindow("Chip8", 100, 100, 640, 480, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+  m_window =
+    std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>>(
+      SDL_CreateWindow("Chip8",
+                        100, 100, 640, 480,
+                        SDL_WINDOW_SHOWN |
+                        SDL_WINDOW_RESIZABLE |
+                        SDL_WINDOW_ALLOW_HIGHDPI
+                       ),
+      SDL_DestroyWindow);
 
-  m_renderer = SDL_CreateRenderer(m_window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  m_renderer =
+    std::unique_ptr<SDL_Renderer, std::function<void(SDL_Renderer*)>>(
+      SDL_CreateRenderer(m_window.get(),
+                         -1,
+                         SDL_RENDERER_ACCELERATED |
+                         SDL_RENDERER_PRESENTVSYNC
+                        ),
+      SDL_DestroyRenderer);
 
-  SDL_RenderSetLogicalSize(m_renderer, 640, 480);
+   SDL_RenderSetLogicalSize(m_renderer.get(), 640, 480);
 
-  if (!m_renderer) {
-    SDL_DestroyWindow(m_window);
+  if (!m_renderer.get()) {
     std::cerr << "SDL_CreateRendrer Error: " << SDL_GetError() << "\n";
     SDL_Quit();
   }
@@ -46,13 +56,13 @@ void DisplayModule::init() {
 void DisplayModule::updateScreen() {
   if (m_drawFlag) {
     drawScreen();
-    SDL_RenderPresent(m_renderer);
+    SDL_RenderPresent(m_renderer.get());
     m_drawFlag = !m_drawFlag;
   }
 }
 
 void DisplayModule::setDrawColor(Color color) {
-  SDL_SetRenderDrawColor(m_renderer, color.red, color.green, color.blue, color.alpha);
+  SDL_SetRenderDrawColor(m_renderer.get(), color.red, color.green, color.blue, color.alpha);
 }
 
 void DisplayModule::drawScreen() {
@@ -60,7 +70,7 @@ void DisplayModule::drawScreen() {
   // Set colour to black before
   // screen is cleared (to black)
   setDrawColor(Color(0,0,0));
-  SDL_RenderClear(m_renderer);
+  SDL_RenderClear(m_renderer.get());
 
   // Set colour to white for drawing the pixels
   setDrawColor(Color(255,255,255));
@@ -68,7 +78,7 @@ void DisplayModule::drawScreen() {
   for (int i = 0; i < 32; ++i) {
     for (int j = 0; j < 64; ++j) {
       if (gfx[i * 64 + j] == 1) {
-        SDL_RenderDrawPoint(m_renderer, i, j);
+        SDL_RenderDrawPoint(m_renderer.get(), i, j);
       }
     }
   }

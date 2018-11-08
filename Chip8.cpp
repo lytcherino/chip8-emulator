@@ -135,12 +135,12 @@ void Chip8::emulateCycle() {
           }
 
           pc = stack[sp];
+          --sp;
 
           if (DEBUG) {
             std::cout << "pc = " << pc << "\n"; 
           }
 
-          --sp;
           calledSubroutine = true;
           break;
         }

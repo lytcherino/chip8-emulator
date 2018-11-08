@@ -9,7 +9,15 @@
 
 #include "BaseModule.h"
 
+
 class DisplayModule : public BaseModule {
+
+  struct sdl_deleter
+  {
+    void operator()(SDL_Window *p) const { SDL_DestroyWindow(p); }
+    void operator()(SDL_Renderer *p) const { SDL_DestroyRenderer(p); }
+    void operator()(SDL_Texture *p) const { SDL_DestroyTexture(p); }
+  };
 
   struct Color {
     uint8_t red;
@@ -45,8 +53,8 @@ private:
   void drawScreen();
   void setDrawColor(Color color);
 
-  SDL_Window* m_window;
-  SDL_Renderer* m_renderer;
+  std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>> m_window;
+  std::unique_ptr<SDL_Renderer, std::function<void(SDL_Renderer*)>> m_renderer;
 
   bool m_drawFlag;
 
