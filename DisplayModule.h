@@ -12,12 +12,12 @@
 class DisplayModule : public BaseModule {
 
   struct Color {
-    int8_t red;
-    int8_t green;
-    int8_t blue;
-    int8_t alpha;
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    uint8_t alpha;
 
-    Color (int8_t red, int8_t green, int8_t blue, int8_t alpha = 255) {
+    Color (uint8_t red, uint8_t green, uint8_t blue, uint8_t alpha = 255) {
       this->red = red;
       this->green = green;
       this->blue = blue;
@@ -43,7 +43,7 @@ private:
 
   void init();
   void drawScreen();
-  void setDrawColor(const Color& color);
+  void setDrawColor(Color color);
 
   SDL_Window* m_window;
   SDL_Renderer* m_renderer;

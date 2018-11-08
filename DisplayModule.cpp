@@ -51,7 +51,7 @@ void DisplayModule::updateScreen() {
   }
 }
 
-void DisplayModule::setDrawColor(const Color& color) {
+void DisplayModule::setDrawColor(Color color) {
   SDL_SetRenderDrawColor(m_renderer, color.red, color.green, color.blue, color.alpha);
 }
 
@@ -86,10 +86,11 @@ unsigned char* DisplayModule::getGfxArray() {
   return gfx;
 }
 
+unsigned char* DisplayModule::getFontset() {
+  return fontset;
+}
+
 void DisplayModule::setDrawFlag() {
   m_drawFlag = true;
 }
 
-unsigned char* DisplayModule::getFontset() {
-  return fontset;
-}

@@ -15,12 +15,12 @@ int main()
     return 1;
   }
 
-  for (int i = 0; i < 200; ++i) {
+  for (int i = 0; i < 500; ++i) {
     chip.emulateCycle();
     chip.handleEvents();
     chip.updateDisplay();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds{100});
+    std::this_thread::sleep_for(std::chrono::milliseconds{33});
   }
 
 }

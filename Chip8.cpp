@@ -110,8 +110,6 @@ void Chip8::emulateCycle() {
   std::cout << "pc: " << std::dec << pc << "\n";
       }
 
-  auto value = inputModule.waitUntilKeyPress();
-  std::cout << "value: " << value << "\n";
   auto beforeOpPc = pc;
   auto calledSubroutine = false;
 

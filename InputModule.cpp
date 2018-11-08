@@ -44,9 +44,10 @@ void InputModule::validateKey(SDL_Keycode key, bool state) {
 int InputModule::waitUntilKeyPress() {
 
   // TODO: use condition variable to wait on mutex?
+  std::cout << "Waiting for key press...\n";
   while(true) {
 
-    std::cout << "Waiting for key press...\n";
+    eventHandler.handleEvents();
 
     for (int i = 0; i < keyState.size(); ++i) {
       if (keyState[i].second) {

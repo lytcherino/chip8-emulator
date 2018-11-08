@@ -18,7 +18,6 @@ public:
   int waitUntilKeyPress();
   bool isKeyPressed(unsigned int index);
 
-protected:
   void registerWithHandler(EventHandler& eventHandler) override;
 
 private:

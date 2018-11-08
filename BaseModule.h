@@ -8,6 +8,7 @@ class BaseModule {
 public:
 
   BaseModule(EventHandler& eventHandler);
+  ~BaseModule();
 
   virtual void registerWithHandler(EventHandler& eventHandler) = 0;
 

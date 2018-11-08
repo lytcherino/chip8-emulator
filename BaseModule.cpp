@@ -3,3 +3,7 @@
 BaseModule::BaseModule(EventHandler& eventHandler) : eventHandler(eventHandler) {
 
 }
+
+BaseModule::~BaseModule() {
+
+}
