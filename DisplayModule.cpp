@@ -78,14 +78,14 @@ void DisplayModule::drawScreen() {
   for (int i = 0; i < 32; ++i) {
     for (int j = 0; j < 64; ++j) {
       if (gfx[i * 64 + j] == 1) {
-        SDL_RenderDrawPoint(m_renderer.get(), i, j);
+        SDL_RenderDrawPoint(m_renderer.get(), j, i);
       }
     }
   }
 }
 
 void DisplayModule::clearScreen() {
-  for (int i = 0; GFX_SIZE; ++i) {
+  for (int i = 0; i < GFX_SIZE; ++i) {
     // Set all bytes to 0
     gfx[i] = 0;
   }
@@ -103,4 +103,3 @@ unsigned char* DisplayModule::getFontset() {
 void DisplayModule::setDrawFlag() {
   m_drawFlag = true;
 }
-

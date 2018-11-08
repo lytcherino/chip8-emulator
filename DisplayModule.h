@@ -12,13 +12,6 @@
 
 class DisplayModule : public BaseModule {
 
-  struct sdl_deleter
-  {
-    void operator()(SDL_Window *p) const { SDL_DestroyWindow(p); }
-    void operator()(SDL_Renderer *p) const { SDL_DestroyRenderer(p); }
-    void operator()(SDL_Texture *p) const { SDL_DestroyTexture(p); }
-  };
-
   struct Color {
     uint8_t red;
     uint8_t green;
@@ -58,8 +51,9 @@ private:
 
   bool m_drawFlag;
 
+  // Graphics supported: 64 x 32 pixels, monochrome
   static constexpr int GFX_SIZE = 64 * 32;
-  unsigned char gfx[GFX_SIZE]; // Graphics supported was 64 x 32 pixels, monochrome
+  unsigned char gfx[GFX_SIZE];
 
   unsigned char fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

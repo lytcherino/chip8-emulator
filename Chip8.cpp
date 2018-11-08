@@ -22,7 +22,7 @@ void Chip8::init() {
   sp = 0;
 
   // Clear Display
-  //displayModule.clearScreen();
+  displayModule.clearScreen();
 
   // TODO: use std::copy(...) instead
 
@@ -32,14 +32,12 @@ void Chip8::init() {
     stack[i] = 0x0;
   }
 
-  // Clear memory
-  for (int i = 0; i < 4096; ++i) {
-    memory[i] = 0x0;
-  }
-
   // Load fontset
   auto fontset = displayModule.getFontset();
   for (int i = 0; i < 80; ++i) {
+    std::cout << std::hex << std::setw(4) << std::setfill('0')
+              << "Fontset[" << i << "] = "
+              << static_cast<int>(fontset[i]) << "\n";
     memory[i] = fontset[i];
   }
 
@@ -54,8 +52,6 @@ void Chip8::updateDisplay() {
 }
 
 bool Chip8::load(const std::string& file) {
-
-  init();
 
   std::ifstream reader(file, std::ios::binary);
 
@@ -122,7 +118,6 @@ void Chip8::emulateCycle() {
         case 0x00E0: {
           // Clears screen
           displayModule.clearScreen();
-          displayModule.setDrawFlag();
           break;
         }
 
@@ -329,17 +324,22 @@ void Chip8::emulateCycle() {
         // Loop over each row
         for (int yScan = 0; yScan < height; ++yScan) {
           pixel = memory[I + yScan]; // Pixel value of memory starting at I
+          std::cout << "Memory location: "
+                    << std::hex << std::setw(4) << std::setfill('0')
+                    << I + yScan << "\n";
           // Loop over each column (8 bits of 1 row)
           for (int xScan = 0; xScan < 8; ++xScan) {
             // Check which pixels are 0, within a byte
             // by checking each one individually by shifting
+            std::cout << "Pixel: " << pixel << "\n";
             if ((pixel && (0x80 >> xScan)) == 1) {
               // If the pixel is 1 and the pixel on the display is 1
               // then a collision is detected
               if (displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] == 1) {
                 V[0xF] = 1; // mark collision
               }
-              displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] ^= 1;
+              std::cout << "Painting at " << x + xScan + ((y + yScan) * 64) << "\n";
+              displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] = 1;
             }
           }
         }
