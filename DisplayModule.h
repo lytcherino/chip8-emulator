@@ -37,7 +37,7 @@ public:
 
   void registerWithHandler(EventHandler& eventHandler) override;
 
-  unsigned char* getGfxArray();
+  std::vector<unsigned char>& getGfxArray();
   unsigned char* getFontset();
 
 private:
@@ -53,7 +53,7 @@ private:
 
   // Graphics supported: 64 x 32 pixels, monochrome
   static constexpr int GFX_SIZE = 64 * 32;
-  unsigned char gfx[GFX_SIZE];
+  std::vector<unsigned char> gfx;
 
   unsigned char fontset[80] = {
     0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

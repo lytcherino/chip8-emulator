@@ -4,21 +4,27 @@
 #include <thread>
 #include <chrono>
 
-int main()
+int main(int argc, char** argv)
 {
-  Chip8 chip;
 
   // Initialise Chip8 emulator and load a game
+  Chip8 chip;
+  /*
+  if (!chip.load(argv[1])) {
+    return 1;
+  }
+  */
+
   if (!chip.load("../Pong.ch8")) {
     return 1;
   }
 
   while (true) {
-  chip.emulateCycle();
-  chip.handleEvents();
-  chip.updateDisplay();
+    chip.emulateCycle();
+    chip.handleEvents();
+    chip.updateDisplay();
 
-  std::this_thread::sleep_for(std::chrono::milliseconds{33});
+    //std::this_thread::sleep_for(std::chrono::milliseconds{1});
   }
 
 }

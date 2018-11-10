@@ -1,6 +1,6 @@
 #include "DisplayModule.h"
 
-DisplayModule::DisplayModule(EventHandler& eventHandler) : BaseModule(eventHandler) {
+DisplayModule::DisplayModule(EventHandler& eventHandler) : BaseModule(eventHandler), gfx(GFX_SIZE, 0) {
 
   registerWithHandler(eventHandler);
   init();
@@ -85,14 +85,12 @@ void DisplayModule::drawScreen() {
 }
 
 void DisplayModule::clearScreen() {
-  for (int i = 0; i < GFX_SIZE; ++i) {
-    // Set all bytes to 0
-    gfx[i] = 0;
-  }
+  // Set all pixels (bytes) to 0
+  std::fill(gfx.begin(), gfx.end(), 0);
   setDrawFlag();
 }
 
-unsigned char* DisplayModule::getGfxArray() {
+std::vector<unsigned char>& DisplayModule::getGfxArray() {
   return gfx;
 }
 
