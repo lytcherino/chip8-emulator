@@ -106,103 +106,97 @@ void Chip8::emulateCycle() {
   std::cout << "pc: " << std::dec << pc << "\n";
       }
 
+  auto x   = (opcode >> 8) & 0x000F; // the lower 4 bits of the high byte
+  auto y   = (opcode >> 4) & 0x000F; // the upper 4 bits of the low byte
+  auto n   = opcode & 0x000F; // the lowest 4 bits
+  auto kk  = opcode & 0x00FF; // the lowest 8 bits
+  auto nnn = opcode & 0x0FFF; // the lowest 12 bits
+
   auto beforeOpPc = pc;
-  auto calledSubroutine = false;
 
   switch(opcode & 0xF000)
     {
-
-    case 0x0000:
-      switch (opcode & 0x00FF)
-        {
-        case 0x00E0: {
-          // Clears screen
-          displayModule.clearScreen();
-          break;
-        }
-
-        case 0x00EE: {
-          // 0x00EE: Returns from subroutine
-
-          if (DEBUG) {
-            std::cout << "Stack at level " << sp << " = " << pc << "\n";
-            std::cout << "stack[sp] = " << stack[sp] << "\n";
+      case 0x0000:
+      {
+        switch (kk)
+          {
+          case 0x00E0: {
+            // Clears screen
+            if (DEBUG) {
+              std::cout << "Clearing screen\n";
+            }
+            displayModule.clearScreen();
+            pc += 2;
+            break;
           }
 
-          pc = stack[sp];
-          --sp;
+          case 0x00EE: {
+            // 0x00EE: Returns from subroutine
 
-          if (DEBUG) {
-            std::cout << "pc = " << pc << "\n"; 
+            if (DEBUG) {
+              std::cout << "Stack at level " << sp << " = " << pc << "\n";
+              std::cout << "stack[sp] = " << stack[sp] << "\n";
+            }
+
+            pc = stack[--sp];
+
+            if (DEBUG) {
+              std::cout << "pc = " << pc << "\n"; 
+            }
+            break;
           }
-
-          calledSubroutine = true;
-          break;
+          default: {
+            std::cout << "Invalid opcode: " << std::setw(4)
+                      << std::setfill('0') << opcode << "\n";
+            break;
+          }
         }
-        default: {
-          std::cout << "Invalid opcode: " << std::setw(4)
-                    << std::setfill('0') << opcode << "\n";
-          break;
-        }
-      }
-
-      if (calledSubroutine) {
-        calledSubroutine = !calledSubroutine;
         break;
-      }
+    }
 
     case 0x1000:
       {
-        pc = opcode & 0x0FFF;
+        pc = nnn;
         break;
       }
 
     case 0x2000:
       {
+        stack[sp] = pc + 2;
         ++sp;
-        stack[sp] = pc;
         std::cout << "Stack at level " << sp << " = " << pc << "\n";
-        pc = opcode & 0x0FFF;
+        pc = nnn;
         break;
       }
 
     case 0x3000:
       {
-        if (V[opcode & 0x0F00 >> 8] != (opcode & 0x00FF)) {
-          pc += 2;
-        }
-        pc += 2;
+        V[x] == kk ? pc += 4 : pc += 2;
         break;
       }
 
     case 0x4000:
       {
-        if (V[opcode & 0x0F00 >> 8] == (opcode & 0x00FF)) {
-          pc += 2;
-        }
-        pc += 2;
+        V[x] != kk ? pc += 4 : pc += 2;
         break;
       }
 
     case 0x5000:
       {
-        if (V[opcode & 0x0F00 >> 8] == V[opcode & 0x00F0 >> 4]) {
-          pc += 2;
-        }
-        pc += 2;
+        V[x] == V[y] ? pc += 4 : pc += 2;
         break;
       }
 
     case 0x6000:
       {
-        V[opcode & 0x0F00 >> 8] = opcode & 0x00FF;
+        V[x] = kk;
         pc += 2;
         break;
       }
 
     case 0x7000:
       {
-        V[opcode & 0x0F00 >> 8] += opcode & 0x00FF;
+        V[x] += kk;
         pc += 2;
         break;
       }
@@ -211,69 +205,53 @@ void Chip8::emulateCycle() {
       {
         switch (opcode & 0x000F) {
 
+        case 0x0000: {
+          V[x] = V[y];
+          break;
+        }
+
         case 0x0001: {
-          V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] | V[opcode & 0x00F0 >> 4];
-          pc += 2;
+          V[x] |= V[y];
           break;
         }
 
         case 0x0002: {
-          V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] & V[opcode & 0x00F0 >> 4];
-          pc += 2;
+          V[x] &= V[y];
           break;
         }
 
         case 0x0003: {
-          V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] ^ V[opcode & 0x00F0 >> 4];
-          pc += 2;
+          V[x] ^= V[y];
           break;
         }
 
         case 0x0004: {
-          V[0xF] = 0;
-          V[opcode & 0x0F00 >> 8] = (V[opcode & 0x0F00 >> 8] + V[opcode & 0x00F0 >> 4]) & 0xFF;
-          if (V[opcode & 0x0F00 >> 8] + V[opcode & 0x00F0 >> 4] > 0xFF) {
-            V[0xF] = 1;
-          }
-          pc += 2;
+          V[0xF] = (V[x] + V[y]) > 0xFF ? 1 : 0;
+          V[x] += V[y];
           break;
         }
 
         case 0x0005: {
-          V[0xF] = 0;
-          V[opcode & 0x0F00 >> 8] = V[opcode & 0x0F00 >> 8] - V[opcode & 0x00F0 >> 4];
-          if (V[opcode & 0x0F00 >> 8] > V[opcode & 0x00F0 >> 4]) {
-            V[0xF] = 1;
-          }
-          pc += 2;
+          V[0xF] = V[x] > V[y] ? 1 : 0;
+          V[x] -= V[y];
           break;
         }
 
         case 0x0006: {
-          V[0xF] = 0;
-          if ((V[opcode & 0x0F00 >> 8] & 0x01) == 1) {
-            V[0xF] = 1;
-          }
-          pc += 2;
+          V[0xF] = V[x] & 0x01;
+          V[x] >>= 1; // divide by 2
           break;
         }
 
         case 0x0007: {
-          V[0xF] = 0;
-          V[opcode & 0x0F00 >> 8] = V[opcode & 0x00F0 >> 4] - V[opcode & 0x0F00 >> 8];
-          if (V[opcode & 0x00F0 >> 4] > V[opcode & 0x0F00 >> 8]) {
-            V[0xF] = 1;
-          }
-          pc += 2;
+          V[0xF] = V[y] > V[x] ? 1 : 0;
+          V[x] = V[y] - V[x];
           break;
         }
 
         case 0x0008: {
-          V[0xF] = 0;
-          if ((V[opcode & 0x0F00 >> 8] & 0x80) == 1) {
-            V[0xF] = 1;
-          }
-          pc += 2;
+          V[0xF] = V[x] & 0x80;
+          V[x] <<= 1; // multiply by 2
           break;
         }
         default: {
@@ -282,65 +260,74 @@ void Chip8::emulateCycle() {
           break;
         }
         }
+        pc += 2;
+        break;
       }
 
     case 0x9000:
       {
-        if (V[opcode & 0x0F00] != V[opcode & 0x00F0]) {
-          pc += 2;
-        }
-        pc += 2;
+        V[x] != V[y] ? pc += 4 : pc += 2;
         break;
       }
 
     case 0xA000:
       {
-        I = opcode & 0x0FFF;
+        I = nnn;
         pc += 2;
         break;
       }
 
     case 0xB000:
       {
-        pc = (opcode & 0x0FFF) + V[0x0];
+        pc = nnn + V[0x0];
         break;
       }
 
     case 0xC000:
       {
-        V[opcode & 0x0F00 >> 8] = rand() % 0xFF + V[0x0];
+        V[x] = (rand() % 0xFF) & kk;
         pc += 2;
         break;
       }
 
+    // TODO: remove magic number 64
     case 0xD000:
       {
-        unsigned short x = V[(opcode & 0x0F00) >> 8];
-        unsigned short y = V[(opcode & 0x00F0) >> 4];
-        unsigned short height = opcode & 0x000F;
+        unsigned short col = V[x];
+        unsigned short row = V[y];
+        unsigned short height = n;
         unsigned short pixel;
 
-        V[0xF] = 0; // Reset VF register
+        // Collision flag
+        V[0xF] = 0; 
+
         // Loop over each row
-        for (int yScan = 0; yScan < height; ++yScan) {
-          pixel = memory[I + yScan]; // Pixel value of memory starting at I
+        for (int byteIndex = 0; byteIndex < height; ++byteIndex) {
+
+          pixel = memory[I + byteIndex]; // Pixel value of memory starting at I
+
           std::cout << "Memory location: "
                     << std::hex << std::setw(4) << std::setfill('0')
-                    << I + yScan << "\n";
+                    << I + byteIndex << "\n";
+
           // Loop over each column (8 bits of 1 row)
-          for (int xScan = 0; xScan < 8; ++xScan) {
+          for (int bitIndex = 0; bitIndex < 8; ++bitIndex) {
+
+            std::cout << "Pixel: " << pixel << "\n";
+
             // Check which pixels are 0, within a byte
             // by checking each one individually by shifting
-            std::cout << "Pixel: " << pixel << "\n";
-            if ((pixel && (0x80 >> xScan)) == 1) {
-              // If the pixel is 1 and the pixel on the display is 1
-              // then a collision is detected
-              if (displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] == 1) {
-                V[0xF] = 1; // mark collision
-              }
-              std::cout << "Painting at " << x + xScan + ((y + yScan) * 64) << "\n";
-              displayModule.getGfxArray()[x + xScan + ((y + yScan) * 64)] = 1;
-            }
+            auto bit = pixel && (0x80 >> bitIndex);
+            
+            auto screenPixel = displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)];
+
+            // If the pixel is 1 and the pixel on the display is 1 then a collision is detected
+            if (bit == 1 && screenPixel == 1) { V[0xF] = 1; } 
+
+            std::cout << "Painting at " << col + bitIndex + ((row + byteIndex) * 64) << "\n";
+
+            displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)] ^= bit;
+
           }
         }
         displayModule.setDrawFlag();
@@ -352,29 +339,22 @@ void Chip8::emulateCycle() {
       {
         switch (opcode & 0x00FF) {
 
-        case 0x009E: {
-          if (inputModule.isKeyPressed(V[(opcode & 0x0F00) >> 8])) {
-            pc += 4;
-          } else {
-            pc += 2;
+          case 0x009E: {
+            inputModule.isKeyPressed(V[x]) ? pc += 4 : pc += 2;
+            break;
           }
-          break;
-        }
 
-        case 0x00A1: {
-          if (!inputModule.isKeyPressed(V[(opcode & 0x0F00) >> 8])) {
-            pc += 4;
-          } else {
-            pc += 2;
+          case 0x00A1: {
+            !inputModule.isKeyPressed(V[x]) ? pc += 4 : pc += 2;
+            break;
           }
-          break;
+          default: {
+            std::cout << "Invalid opcode: " << std::setw(4)
+                      << std::setfill('0') << std::hex << opcode << "\n";
+            break;
+          }
         }
-        default: {
-          std::cout << "Invalid opcode: " << std::setw(4)
-                    << std::setfill('0') << std::hex << opcode << "\n";
-          break;
-        }
-        }
+        break;
       }
 
     case 0xF000:
@@ -382,59 +362,61 @@ void Chip8::emulateCycle() {
         switch (opcode & 0x00FF) {
 
           case 0x0007: {
-            V[(opcode & 0x0F00) >> 8] = delayTimer;
+            V[x] = delayTimer;
             pc += 2;
           }
 
           case 0x000A: {
-            auto value = inputModule.waitUntilKeyPress();
-            V[(opcode & 0x0F00)] = value;
+            V[x] = inputModule.waitUntilKeyPress();
             pc += 2;
           }
 
           case 0x0015: {
-            delayTimer = (opcode & 0x0F00) >> 8;
+            delayTimer = V[x];
             pc += 2;
           }
 
           case 0x0018: {
-            soundTimer = V[opcode & 0x0F00 >> 8];
+            soundTimer = V[x];
             pc += 2;
             break;
           }
 
           case 0x001E: {
-            I += V[opcode & 0x0F00 >> 8];
+            V[0xF] = (I + V[x] > 0xFFF) ? 1 : 0;
+            I += V[x];
             pc += 2;
             break;
           }
 
           case 0x0029: {
-            I = V[opcode & 0x0F00 >> 8] * 0x05;
+            I = V[x] * 0x05;
             pc += 2;
             break;
           }
 
           case 0x0033: {
-            memory[I] = V[(opcode & 0x0F00) >> 8] / 100; // hundreds digit
-            memory[I + 1] = (V[(opcode & 0x0F00) >> 8] % 100) / 10; // tenth digit
-            memory[I + 2] = (V[(opcode & 0x0F00) >> 8] % 100) % 10; // ones digit
+            memory[I]     = (V[x] % 1000) / 100;  // hundreds digit
+            memory[I + 1] = (V[x] % 100) / 10;    // tenth digit
+            memory[I + 2] = (V[x] % 10);          // ones digit
             pc += 2;
             break;
           }
 
           case 0x0055: {
-            for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
+            for (int i = 0; i < x; ++i) {
               memory[I+i] = V[i];
             }
+            I += x + 1;
             pc += 2;
             break;
           }
 
           case 0x0065: {
-            for (int i = 0; i < V[opcode & 0x0F00 >> 8]; ++i) {
+            for (int i = 0; i < x; ++i) {
               V[i] = memory[I+i];
             }
+            I += x + 1;
             pc += 2;
             break;
           }
@@ -446,11 +428,13 @@ void Chip8::emulateCycle() {
           }
         }
       }
+      break;
     }
 
     if (beforeOpPc == pc) {
-      std::cout << "Invalid opcode: " << std::setw(4)
+      std::cout << "Opcode did not change - error detected: " << std::setw(4)
                 << std::setfill('0') << std::hex << opcode << "\n";
+      throw std::invalid_argument("");
     }
 
     // Update timers
@@ -459,11 +443,10 @@ void Chip8::emulateCycle() {
     }
 
     if (soundTimer > 0) {
+      --soundTimer;
       if (soundTimer == 1) {
         std::cout << "Beep!\n";
       }
-      --soundTimer;
     }
-
 }
 

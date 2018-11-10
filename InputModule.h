@@ -25,13 +25,6 @@ private:
   void validateKey(SDL_Keycode key, bool state);
   void notifyKeyPress(unsigned int keyValue, bool state);
 
-  /*
-  std::vector<unsigned char> keyInputs = {
-    '1', '2', '3', '4', 'Q', 'W', 'E', 'R',
-    'A', 'S', 'D', 'F', 'Z', 'X', 'C', 'V'
-  };
-  */
-
   // true, position down (pressed), false (position up) not pressed
   std::vector<std::pair<SDL_Keycode, bool>> keyState = {
     {SDLK_1, false}, {SDLK_2, false}, {SDLK_3, false}, {SDLK_4, false},

@@ -2,4 +2,4 @@
 
 build/
 *.ch8
-
+.vscode/*
