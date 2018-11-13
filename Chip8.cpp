@@ -108,9 +108,9 @@ void Chip8::emulateCycle() {
 
   auto x   = (opcode >> 8) & 0x000F; // the lower 4 bits of the high byte
   auto y   = (opcode >> 4) & 0x000F; // the upper 4 bits of the low byte
-  auto n   = opcode & 0x000F; // the lowest 4 bits
-  auto kk  = opcode & 0x00FF; // the lowest 8 bits
   auto nnn = opcode & 0x0FFF; // the lowest 12 bits
+  auto kk  = opcode & 0x00FF; // the lowest 8 bits
+  auto n   = opcode & 0x000F; // the lowest 4 bits
 
   auto beforeOpPc = pc;
 
@@ -296,7 +296,7 @@ void Chip8::emulateCycle() {
         unsigned short col = V[x];
         unsigned short row = V[y];
         unsigned short height = n;
-        unsigned short pixel;
+        unsigned short pixelByte;
 
         // Collision flag
         V[0xF] = 0; 
@@ -304,27 +304,26 @@ void Chip8::emulateCycle() {
         // Loop over each row
         for (int byteIndex = 0; byteIndex < height; ++byteIndex) {
 
-          pixel = memory[I + byteIndex]; // Pixel value of memory starting at I
+          pixelByte = memory[I + byteIndex]; // Pixel value of memory starting at I
 
           std::cout << "Memory location: "
                     << std::hex << std::setw(4) << std::setfill('0')
                     << I + byteIndex << "\n";
 
+          std::cout << "pixelByte: " << pixel << "\n";
           // Loop over each column (8 bits of 1 row)
           for (int bitIndex = 0; bitIndex < 8; ++bitIndex) {
 
-            std::cout << "Pixel: " << pixel << "\n";
-
-            // Check which pixels are 0, within a byte
+            // Check which pixelBytes are 0, within a byte
             // by checking each one individually by shifting
-            auto bit = pixel && (0x80 >> bitIndex);
+            auto bit = pixelByte & (0x80 >> bitIndex);
             
-            auto screenPixel = displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)];
+            auto screenPixelByte = displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)];
 
-            // If the pixel is 1 and the pixel on the display is 1 then a collision is detected
-            if (bit == 1 && screenPixel == 1) { V[0xF] = 1; } 
+            // If the pixelByte is 1 and the pixel on the display is 1 then a collision is detected
+            if (bit == 1 && screenPixelByte == 1) { V[0xF] = 1; } 
 
-            std::cout << "Painting at " << col + bitIndex + ((row + byteIndex) * 64) << "\n";
+            std::cout << "Painting at " << std::dec << col + bitIndex + ((row + byteIndex) * 64) << "\n";
 
             displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)] ^= bit;
 

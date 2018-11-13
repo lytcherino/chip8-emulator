@@ -4,6 +4,8 @@
 #include <thread>
 #include <chrono>
 
+#define FRAME_RATE 60
+
 int main(int argc, char** argv)
 {
 
@@ -23,8 +25,7 @@ int main(int argc, char** argv)
     chip.emulateCycle();
     chip.handleEvents();
     chip.updateDisplay();
-
-    //std::this_thread::sleep_for(std::chrono::milliseconds{1});
   }
+
 
 }
