@@ -102,9 +102,9 @@ void Chip8::emulateCycle() {
             << "memory[" << pc << " + 1] << 8 = "
             << static_cast<int>(memory[pc + 1]) << "\n";
 
+      }
   std::cout << "opcode: " << std::setw(4) << std::setfill('0') << std::hex << opcode << "\n";
   std::cout << "pc: " << std::dec << pc << "\n";
-      }
 
   uint8_t x   = (opcode >> 8) & 0x000F; // the lower 4 bits of the high byte
   uint8_t y   = (opcode >> 4) & 0x000F; // the upper 4 bits of the low byte
@@ -156,7 +156,9 @@ void Chip8::emulateCycle() {
 
     case 0x1000:
       {
+        std::cout << "before: pc = " << pc << "\n";
         pc = nnn;
+        std::cout << "after: pc = " << pc << "\n";
         break;
       }
 
@@ -251,11 +253,12 @@ void Chip8::emulateCycle() {
           break;
         }
 
-        case 0x0008: {
-          V[0xF] = V[x] & 0x80;
+        case 0x000E: {
+          V[0xF] = (V[x] >> 7) & 0x1;
           V[x] <<= 1; // multiply by 2
           break;
         }
+
         default: {
           std::cout << "Invalid opcode: " << std::setw(4)
                     << std::setfill('0') << std::hex << opcode << "\n";
@@ -408,6 +411,7 @@ void Chip8::emulateCycle() {
           }
 
           case 0x0055: {
+            std::cout << "HIT55\n";
             for (int i = 0; i <= x; ++i) {
               memory[I+i] = V[i];
             }
@@ -417,6 +421,7 @@ void Chip8::emulateCycle() {
           }
 
           case 0x0065: {
+            std::cout << "HIT65\n";
             for (int i = 0; i <= x; ++i) {
               V[i] = memory[I+i];
             }
@@ -433,12 +438,6 @@ void Chip8::emulateCycle() {
         }
       }
       break;
-    }
-
-    if (beforeOpPc == pc) {
-      std::cout << "Opcode did not change - error detected: " << std::setw(4)
-                << std::setfill('0') << std::hex << opcode << "\n";
-      throw std::invalid_argument("");
     }
 
     // Update timers
