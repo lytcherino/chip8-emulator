@@ -3,7 +3,7 @@
 #include <iomanip>
 #include <random>
 
-#define DEBUG true
+#define DEBUG false
 
 Chip8::Chip8()
   : displayModule(m_sdlEventHandler),
@@ -106,11 +106,11 @@ void Chip8::emulateCycle() {
   std::cout << "pc: " << std::dec << pc << "\n";
       }
 
-  auto x   = (opcode >> 8) & 0x000F; // the lower 4 bits of the high byte
-  auto y   = (opcode >> 4) & 0x000F; // the upper 4 bits of the low byte
-  auto nnn = opcode & 0x0FFF; // the lowest 12 bits
-  auto kk  = opcode & 0x00FF; // the lowest 8 bits
-  auto n   = opcode & 0x000F; // the lowest 4 bits
+  uint8_t x   = (opcode >> 8) & 0x000F; // the lower 4 bits of the high byte
+  uint8_t y   = (opcode >> 4) & 0x000F; // the upper 4 bits of the low byte
+  uint8_t n   = opcode & 0x000F; // the lowest 4 bits
+  uint8_t kk  = opcode & 0x00FF; // the lowest 8 bits
+  uint16_t nnn = opcode & 0x0FFF; // the lowest 12 bits
 
   auto beforeOpPc = pc;
 
@@ -164,7 +164,9 @@ void Chip8::emulateCycle() {
       {
         stack[sp] = pc + 2;
         ++sp;
-        std::cout << "Stack at level " << sp << " = " << pc << "\n";
+        if (DEBUG) {
+          std::cout << "Stack at level " << sp << " = " << pc << "\n";
+        }
         pc = nnn;
         break;
       }
@@ -285,7 +287,7 @@ void Chip8::emulateCycle() {
 
     case 0xC000:
       {
-        V[x] = (rand() % 0xFF) & kk;
+        V[x] = (rand() % (0xFF + 1)) & kk;
         pc += 2;
         break;
       }
@@ -293,10 +295,10 @@ void Chip8::emulateCycle() {
     // TODO: remove magic number 64
     case 0xD000:
       {
-        unsigned short col = V[x];
-        unsigned short row = V[y];
-        unsigned short height = n;
-        unsigned short pixelByte;
+        auto col = V[x];
+        auto row = V[y];
+        auto height = n;
+        uint8_t pixel;
 
         // Collision flag
         V[0xF] = 0; 
@@ -304,28 +306,31 @@ void Chip8::emulateCycle() {
         // Loop over each row
         for (int byteIndex = 0; byteIndex < height; ++byteIndex) {
 
-          pixelByte = memory[I + byteIndex]; // Pixel value of memory starting at I
+          pixel = memory[I + byteIndex]; // Pixel value of memory starting at I
 
-          std::cout << "Memory location: "
-                    << std::hex << std::setw(4) << std::setfill('0')
-                    << I + byteIndex << "\n";
+          if (DEBUG) {
+            std::cout << "Memory location: "
+                      << std::hex << std::setw(4) << std::setfill('0')
+                      << I + byteIndex << "\n";
+            std::cout << "Pixel: " << pixel << "\n";
+          }
 
-          std::cout << "pixelByte: " << pixel << "\n";
           // Loop over each column (8 bits of 1 row)
           for (int bitIndex = 0; bitIndex < 8; ++bitIndex) {
 
-            // Check which pixelBytes are 0, within a byte
+            // Check which pixels are 0, within a byte
             // by checking each one individually by shifting
-            auto bit = pixelByte & (0x80 >> bitIndex);
-            
-            auto screenPixelByte = displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)];
+            auto bit = (pixel >> bitIndex) & 0x1;
+            auto& screenPixel = displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)];
+            screenPixel ^= bit;
 
-            // If the pixelByte is 1 and the pixel on the display is 1 then a collision is detected
-            if (bit == 1 && screenPixelByte == 1) { V[0xF] = 1; } 
+            // If the pixel is 1 and the pixel on the display is 1 then a collision is detected
+            if (bit == 1 && screenPixel == 1) { V[0xF] = 1; } 
 
-            std::cout << "Painting at " << std::dec << col + bitIndex + ((row + byteIndex) * 64) << "\n";
-
-            displayModule.getGfxArray()[col + bitIndex + ((row + byteIndex) * 64)] ^= bit;
+            if (DEBUG) {
+              std::cout << "Painting at " << col + bitIndex + ((row + byteIndex) * 64) << "\n";
+              std::cout << "ScreenPixel " << screenPixel << "\n";
+            }
 
           }
         }
@@ -403,7 +408,7 @@ void Chip8::emulateCycle() {
           }
 
           case 0x0055: {
-            for (int i = 0; i < x; ++i) {
+            for (int i = 0; i <= x; ++i) {
               memory[I+i] = V[i];
             }
             I += x + 1;
@@ -412,7 +417,7 @@ void Chip8::emulateCycle() {
           }
 
           case 0x0065: {
-            for (int i = 0; i < x; ++i) {
+            for (int i = 0; i <= x; ++i) {
               V[i] = memory[I+i];
             }
             I += x + 1;

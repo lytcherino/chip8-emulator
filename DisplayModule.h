@@ -9,7 +9,6 @@
 
 #include "BaseModule.h"
 
-
 class DisplayModule : public BaseModule {
 
   struct Color {
@@ -52,7 +51,9 @@ private:
   bool m_drawFlag;
 
   // Graphics supported: 64 x 32 pixels, monochrome
-  static constexpr int GFX_SIZE = 64 * 32;
+  static constexpr int HEIGHT = 32;
+  static constexpr int WIDTH = 64;
+
   std::vector<unsigned char> gfx;
 
   unsigned char fontset[80] = {

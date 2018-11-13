@@ -1,6 +1,6 @@
 #include "DisplayModule.h"
 
-DisplayModule::DisplayModule(EventHandler& eventHandler) : BaseModule(eventHandler), gfx(GFX_SIZE, 0) {
+DisplayModule::DisplayModule(EventHandler& eventHandler) : BaseModule(eventHandler), gfx(HEIGHT*WIDTH, 0) {
 
   registerWithHandler(eventHandler);
   init();
@@ -29,7 +29,7 @@ void DisplayModule::init() {
   m_window =
     std::unique_ptr<SDL_Window, std::function<void(SDL_Window*)>>(
       SDL_CreateWindow("Chip8",
-                        100, 100, 640, 480,
+                        0, 0, WIDTH, HEIGHT,
                         SDL_WINDOW_SHOWN |
                         SDL_WINDOW_RESIZABLE |
                         SDL_WINDOW_ALLOW_HIGHDPI
@@ -75,10 +75,13 @@ void DisplayModule::drawScreen() {
   // Set colour to white for drawing the pixels
   setDrawColor(Color(255,255,255));
 
-  for (int i = 0; i < 32; ++i) {
-    for (int j = 0; j < 64; ++j) {
-      if (gfx[i * 64 + j] == 1) {
-        SDL_RenderDrawPoint(m_renderer.get(), j, i);
+  for (int i = 0; i < HEIGHT; ++i) {
+    for (int j = 0; j < WIDTH; ++j) {
+      if (gfx[i * WIDTH + j] == 1) {
+        // Subtract to mirror the image, as the SDL coordinates
+        // (0,0) are in the lower left corner, whereas
+        // Chip8 expects it at the top left.
+        SDL_RenderDrawPoint(m_renderer.get(), WIDTH - 1 - j, i);
       }
     }
   }

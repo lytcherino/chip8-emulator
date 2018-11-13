@@ -1,6 +1,6 @@
 #include "InputModule.h"
 
-#define DEBUG true
+#define DEBUG false
 
 InputModule::InputModule(EventHandler& eventHandler)
   : BaseModule(eventHandler) {
@@ -52,7 +52,7 @@ int InputModule::waitUntilKeyPress() {
     for (int i = 0; i < keyState.size(); ++i) {
       if (keyState[i].second) {
         std::cout << "Exiting key wait state";
-        return keyState[i].first;
+        return i;
       }
     }
 

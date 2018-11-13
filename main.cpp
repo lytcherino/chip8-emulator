@@ -22,9 +22,12 @@ int main(int argc, char** argv)
   }
 
   while (true) {
+
     chip.emulateCycle();
     chip.handleEvents();
     chip.updateDisplay();
+
+    //std::this_thread::sleep_for(std::chrono::milliseconds{1});
   }
 
 
