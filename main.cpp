@@ -11,13 +11,8 @@ int main(int argc, char** argv)
 
   // Initialise Chip8 emulator and load a game
   Chip8 chip;
-  /*
+ 
   if (!chip.load(argv[1])) {
-    return 1;
-  }
-  */
-
-  if (!chip.load("../Airplane.ch8")) {
     return 1;
   }
 
@@ -29,6 +24,5 @@ int main(int argc, char** argv)
 
     //std::this_thread::sleep_for(std::chrono::milliseconds{30});
   }
-
 
 }
