@@ -10,17 +10,15 @@
 class Chip8
 {
 public:
-
   Chip8();
 
   void init();
   void emulateCycle();
   void handleEvents();
   void updateDisplay();
-  bool load(const std::string& file);
+  bool load(const std::string &file);
 
 private:
-
   EventHandler m_sdlEventHandler;
 
   DisplayModule displayModule;
@@ -37,15 +35,14 @@ private:
 
   unsigned char V[16]; // 15, 8-bit registers, V1 ... VF
 
-  unsigned short I; // Index register
+  unsigned short I;  // Index register
   unsigned short pc; // Program counter;
 
   unsigned short stack[16]; // Stack with 16 levels
-  unsigned short sp; // Stack pointer, points to current level used in stack
+  unsigned short sp;        // Stack pointer, points to current level used in stack
 
   // 60Hz timers
   unsigned char delayTimer;
   unsigned char soundTimer; // System buzzes when sound timer is 0
-
 };
 #endif
